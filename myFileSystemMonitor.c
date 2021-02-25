@@ -71,8 +71,10 @@ void *my_libcli(void *arg)
 void inotify(int argc, char **argv, char *address)
 {
     char buf;
-    int fd, i;
+    int fd, i, poll_num;
     int *wd;
+    nfds_t nfds;
+    struct pollfd fds[2];
 
     printf("Press ENTER key to terminate.\n");
 
@@ -101,6 +103,15 @@ void inotify(int argc, char **argv, char *address)
         }
     }
 
+    nfds = 2;
+
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+
+    fds[1].fd = fd;
+    fds[1].events = POLLIN;
+
+    pthread_t thread_id;
 }
 
 char **split_str(char *str, size_t *size)
