@@ -21,6 +21,51 @@
 #include <pthread.h>
 #include <libcli.h>
 
+#define PORT 8000
+
+int flag = 0;
+struct cli_def *cli;
+
+
+int cmd_backtrace(struct cli_def *cli, const char *command, char *argv[], int argc)
+{
+    cli_print(cli, "called %s with %s\r\n", __FUNCTION__, command);
+    flag = 1;
+    return CLI_OK;
+}
+
+void *my_libcli(void *arg)
+{
+    char *address = (char *)arg;
+    struct sockaddr_in servaddr;
+    int on = 1, x, s;
+
+    cli = cli_init();
+
+    cli_set_hostname(cli, "FileSystemMonitor");
+
+    cli_register_command(cli, NULL, "backtrace", cmd_backtrace, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
+
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(PORT);
+    servaddr.sin_addr.s_addr = inet_addr(address);
+
+    bind(s, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+    listen(s, 50);
+
+    while ((x = accept(s, NULL, 0)))
+    {
+        cli_loop(cli, x);
+        close(x);
+    }
+
+    return NULL;
+}
 
 
 void inotify(int argc, char **argv, char *address)
